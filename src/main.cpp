@@ -88,13 +88,13 @@ int main(int argc, char *argv[]){
     //need to make a tests for 10000 entities
     std::cout << "Constructing 10000 entities" << std::endl;
 
-    PAPI_start_counters(Events, NUM_EVENTS);
+    PAPI_start_counters(Events, NUM_EVENTS); //start counters
 
     PAPI_read_counters(start, NUM_EVENTS);
 
     test_entt_10000_empty();
 
-    PAPI_read_counters(stop, NUM_EVENTS);
+    PAPI_stop_counters(stop, NUM_EVENTS);
 
     std::ofstream empty("../data/10000empty.dat");
 
@@ -114,11 +114,13 @@ int main(int argc, char *argv[]){
 
     std::ofstream withcomponents("../data/withcomponents.dat");
 
+    PAPI_start_counters(Events, NUM_EVENTS);
+
     PAPI_read_counters(start, NUM_EVENTS);
 
     auto reg = test_entt_10000_with_components();
 
-    PAPI_read_counters(stop, NUM_EVENTS);
+    PAPI_stop_counters(stop, NUM_EVENTS);
 
     for(std::uint8_t i = 0; i < NUM_EVENTS; i++){
         printf("%llu stop - %llu start\n", stop[i], start[i]);
@@ -135,12 +137,16 @@ int main(int argc, char *argv[]){
 
     std::ofstream update("../data/update.dat");
 
+    auto reg1 = test_entt_10000_with_components();
+
+    PAPI_start_counters(Events, NUM_EVENTS);
+
     PAPI_read_counters(start, NUM_EVENTS);
     
-    systemw1(reg);
-    systemw2(reg);
+    systemw1(reg1);
+    systemw2(reg1);
 
-    PAPI_read_counters(stop, NUM_EVENTS);
+    PAPI_stop_counters(stop, NUM_EVENTS);
    
     for(std::uint8_t i = 0; i < NUM_EVENTS; i++){
         printf("%llu stop - %llu start\n", stop[i], start[i]);
@@ -152,4 +158,21 @@ int main(int argc, char *argv[]){
     update.close();
 
     printf("%llu L1 cache misses and %llu L2 cache misses\n", values[0], values[1]);
+
+    //ramping up performance test
+    std::ofstream rampup("../data/rampup.dat");
+    entt::DefaultRegistry reg2;
+    for(int64_t i = 0; i <= 10000; i = i+1000){
+        reg2 = test_entt_10000_with_components();
+        PAPI_start_counters(Events, NUM_EVENTS);
+        PAPI_read_counters(start, NUM_EVENTS);
+        systemw1(reg1);
+        systemw2(reg1);
+        PAPI_stop_counters(stop, NUM_EVENTS);
+        printf("%llu stop - %llu start\n", stop[0], start[0]);
+        // printf("%llu stop - %llu start\n", stop[1], start[1]);
+        rampup << i << " " << stop[0] - start[0] << " " << stop[1] - start[1] <<std::endl;
+    }
+    rampup.close();
+        
 }
