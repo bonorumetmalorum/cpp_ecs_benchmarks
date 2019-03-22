@@ -8,12 +8,15 @@
 
 #define NUM_EVENTS 2
 
+//i have 4mb l3 cache, 2 x 256 kb l2 cache and 2x 32 Kb l1 data cache
+// http://www.cpu-world.com/CPUs/Core_i7/Intel-Core%20i7-3667U%20Mobile%20processor.html
+
 struct R{
-    float x;
+    float x; //32 bits
 };
 
 struct W1{
-    float x; 
+    float x;
 };
 
 
@@ -54,9 +57,10 @@ void test_entt_10000_empty () {
     }
 }
 
-entt::DefaultRegistry test_entt_10000_with_components () {
+entt::DefaultRegistry test_entt_with_components(long num_entities)
+{
     entt::DefaultRegistry registry;
-    for(std::uint64_t i = 0; i < 10000L; i++) {
+    for(std::uint64_t i = 0; i < num_entities; i++) {
         auto entity = registry.create();
         registry.assign<R>(entity);
         registry.assign<W1>(entity);
@@ -118,7 +122,7 @@ int main(int argc, char *argv[]){
 
     PAPI_read_counters(start, NUM_EVENTS);
 
-    auto reg = test_entt_10000_with_components();
+    auto reg = test_entt_with_components(10000L);
 
     PAPI_stop_counters(stop, NUM_EVENTS);
 
@@ -137,7 +141,7 @@ int main(int argc, char *argv[]){
 
     std::ofstream update("../data/update.dat");
 
-    auto reg1 = test_entt_10000_with_components();
+    auto reg1 = test_entt_with_components(10000L);
 
     PAPI_start_counters(Events, NUM_EVENTS);
 
@@ -160,10 +164,14 @@ int main(int argc, char *argv[]){
     printf("%llu L1 cache misses and %llu L2 cache misses\n", values[0], values[1]);
 
     //ramping up performance test
+    
     std::ofstream rampup("../data/rampup.dat");
     entt::DefaultRegistry reg2;
-    for(int64_t i = 0; i <= 10000; i = i+1000){
-        reg2 = test_entt_10000_with_components();
+    long long NUM_ENT = 1000000L;
+    long STEP = 1000;
+    printf("%lli", NUM_ENT);
+    for(long i = 0; i <= NUM_ENT; i = i+STEP){
+        reg2 = test_entt_with_components(NUM_ENT);
         PAPI_start_counters(Events, NUM_EVENTS);
         PAPI_read_counters(start, NUM_EVENTS);
         systemw1(reg1);
