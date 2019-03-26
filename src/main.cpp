@@ -12,16 +12,16 @@
 // http://www.cpu-world.com/CPUs/Core_i7/Intel-Core%20i7-3667U%20Mobile%20processor.html
 
 struct R{
-    float x; //32 bits
+    float x = 100.0; //32 bits
 };
 
 struct W1{
-    float x;
+    float x = 100.0;
 };
 
 
 struct W2{
-    float x;
+    float x = 100.0;
 };
 
 void systemw1(entt::DefaultRegistry &registery){
@@ -65,11 +65,21 @@ entt::DefaultRegistry test_entt_with_components(long num_entities)
         registry.assign<R>(entity);
         registry.assign<W1>(entity);
         registry.assign<W2>(entity);
+        
     }
     return registry;
 }
 
-//g++ -I../lib/entt-2.7.3/src/entt/ main.cpp -lpapi
+void add_entities(entt::Registry<uint64_t> &reg, long noe) {
+    for(std::uint64_t i = 0; i < noe; i++){
+        auto entt = reg.create();
+        reg.assign<R>(entt);
+        // reg.assign<W1>(entt);
+        // reg.assign<W2>(entt);
+    }
+}
+
+//g++ -O0-I../lib/entt-2.7.3/src/entt/ main.cpp -lpapi
 int main(int argc, char *argv[]){
 
     //create event set
@@ -166,19 +176,16 @@ int main(int argc, char *argv[]){
     //ramping up performance test
     
     std::ofstream rampup("../data/rampup.dat");
-    entt::DefaultRegistry reg2;
-    long long NUM_ENT = 1000000L;
-    long STEP = 1000;
+    long long NUM_ENT = 1000000;
+    long STEP = 10000;
     printf("%lli", NUM_ENT);
+    entt::Registry<uint64_t> reg2;
     for(long i = 0; i <= NUM_ENT; i = i+STEP){
-        reg2 = test_entt_with_components(NUM_ENT);
         PAPI_start_counters(Events, NUM_EVENTS);
         PAPI_read_counters(start, NUM_EVENTS);
-        systemw1(reg1);
-        systemw2(reg1);
+        add_entities(reg2, STEP);
         PAPI_stop_counters(stop, NUM_EVENTS);
         printf("%llu stop - %llu start\n", stop[0], start[0]);
-        // printf("%llu stop - %llu start\n", stop[1], start[1]);
         rampup << i << " " << stop[0] - start[0] << " " << stop[1] - start[1] <<std::endl;
     }
     rampup.close();
