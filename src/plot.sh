@@ -1,6 +1,6 @@
 #!/bin/bash
 
-g++ -O0 -I../lib/entt-2.7.3/src/entt/ main.cpp -lpapi
+g++ -I../lib/entt-2.7.3/src/entt/ main.cpp -lpapi
 
 ./a.out
 

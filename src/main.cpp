@@ -24,7 +24,11 @@ struct W2{
     float x = 100.0;
 };
 
-void systemw1(entt::DefaultRegistry &registery){
+struct W3{
+    float x = 100.0;
+};
+
+void systemw1(entt::Registry<u_int64_t> &registery){
     auto view = registery.view<R, W1>();
 
     for(auto entity : view){
@@ -34,7 +38,7 @@ void systemw1(entt::DefaultRegistry &registery){
     }
 }
 
-void systemw2(entt::DefaultRegistry &registery){
+void systemw2(entt::Registry<u_int64_t> &registery){
     auto view = registery.view<R, W2>();
 
     for(auto entity : view){
@@ -51,15 +55,15 @@ void handle_error (int retval)
 }
 
 void test_entt_10000_empty () {
-    entt::DefaultRegistry registry;
+    entt::Registry<u_int64_t> registry;
     for(std::uint64_t i = 0; i < 10000L; i++) {
         registry.create();
     }
 }
 
-entt::DefaultRegistry test_entt_with_components(long num_entities)
+entt::Registry<u_int64_t> test_entt_with_components(long num_entities)
 {
-    entt::DefaultRegistry registry;
+    entt::Registry<u_int64_t> registry;
     for(std::uint64_t i = 0; i < num_entities; i++) {
         auto entity = registry.create();
         registry.assign<R>(entity);
@@ -70,12 +74,14 @@ entt::DefaultRegistry test_entt_with_components(long num_entities)
     return registry;
 }
 
+
 void add_entities(entt::Registry<uint64_t> &reg, long noe) {
     for(std::uint64_t i = 0; i < noe; i++){
         auto entt = reg.create();
         reg.assign<R>(entt);
-        // reg.assign<W1>(entt);
-        // reg.assign<W2>(entt);
+        reg.assign<W1>(entt);
+        reg.assign<W2>(entt);
+        reg.assign<W3>(entt);
     }
 }
 
@@ -174,20 +180,41 @@ int main(int argc, char *argv[]){
     printf("%llu L1 cache misses and %llu L2 cache misses\n", values[0], values[1]);
 
     //ramping up performance test
-    
+    int EventsClock[1] = {PAPI_REF_CYC};
+    long long startRamp[1] = {0};
+    long long stopRamp[1] = {0};
     std::ofstream rampup("../data/rampup.dat");
     long long NUM_ENT = 1000000;
-    long STEP = 10000;
-    printf("%lli", NUM_ENT);
+    long STEP = 1000;
     entt::Registry<uint64_t> reg2;
-    for(long i = 0; i <= NUM_ENT; i = i+STEP){
-        PAPI_start_counters(Events, NUM_EVENTS);
-        PAPI_read_counters(start, NUM_EVENTS);
+    printf("%lli", NUM_ENT);
+    for(uint64_t i = 0; i <= NUM_ENT; i = i+STEP){
+        PAPI_start_counters(EventsClock, 1);
+        //PAPI_read_counters(startRamp, 1);
         add_entities(reg2, STEP);
-        PAPI_stop_counters(stop, NUM_EVENTS);
-        printf("%llu stop - %llu start\n", stop[0], start[0]);
-        rampup << i << " " << stop[0] - start[0] << " " << stop[1] - start[1] <<std::endl;
+        PAPI_stop_counters(stopRamp, 1);
+        printf("%llu stop - %llu start\n", stopRamp[0], startRamp[0]);
+        rampup << i << " " << stopRamp[0] /*- startRamp[0] /*<< " " << stopRamp[1] - startRamp[1] << " " << stopRamp[2] - startRamp[2]*/ <<std::endl;
     }
     rampup.close();
-        
+
+    
+    // //ramping up performance test
+    // int EventsClock[1] = {PAPI_REF_CYC};
+    // long long startRamp[1] = {0};
+    // long long stopRamp[1] = {0};
+    // std::ofstream rampup("../data/rampup.dat");
+    // long long NUM_ENT = 1000000;
+    // long STEP = 1;
+    // entt::Registry<uint64_t> reg2 = test_entt_with_components(NUM_ENT);
+    // auto view = reg2.view<R>();
+    // for(uint64_t i = 0; i < NUM_ENT; i = i+STEP){
+    //     PAPI_start_counters(EventsClock, 1);
+    //     //PAPI_read_counters(startRamp, 1);
+    //     auto &var = view.get(i);
+    //     PAPI_stop_counters(stopRamp, 1);
+    //     printf("%llu stop - %llu start\n", stopRamp[0], startRamp[0]);
+    //     rampup << i << " " << stopRamp[0] /*- startRamp[0] /*<< " " << stopRamp[1] - startRamp[1] << " " << stopRamp[2] - startRamp[2]*/ <<std::endl;
+    // }
+    // rampup.close();    
 }
