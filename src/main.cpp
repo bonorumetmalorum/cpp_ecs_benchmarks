@@ -179,42 +179,52 @@ int main(int argc, char *argv[]){
 
     printf("%llu L1 cache misses and %llu L2 cache misses\n", values[0], values[1]);
 
-    //ramping up performance test
+    //cpu cycles vs creating entities
     int EventsClock[1] = {PAPI_REF_CYC};
-    long long startRamp[1] = {0};
     long long stopRamp[1] = {0};
-    std::ofstream rampup("../data/rampup.dat");
-    long long NUM_ENT = 1000000;
-    long STEP = 1000;
+    std::ofstream cyclesvscreation("../data/cyclesvscreation.dat");
+    long long NUM_ENT = 10000;
+    long STEP = 100;
     entt::Registry<uint64_t> reg2;
     printf("%lli", NUM_ENT);
     for(uint64_t i = 0; i <= NUM_ENT; i = i+STEP){
         PAPI_start_counters(EventsClock, 1);
-        //PAPI_read_counters(startRamp, 1);
         add_entities(reg2, STEP);
         PAPI_stop_counters(stopRamp, 1);
-        printf("%llu stop - %llu start\n", stopRamp[0], startRamp[0]);
-        rampup << i << " " << stopRamp[0] /*- startRamp[0] /*<< " " << stopRamp[1] - startRamp[1] << " " << stopRamp[2] - startRamp[2]*/ <<std::endl;
+        printf("%llu cpu clock\n", stopRamp[0]);
+        cyclesvscreation << i << " " << stopRamp[0] <<std::endl;
     }
-    rampup.close();
-
+    cyclesvscreation.close();
     
-    // //ramping up performance test
-    // int EventsClock[1] = {PAPI_REF_CYC};
-    // long long startRamp[1] = {0};
-    // long long stopRamp[1] = {0};
-    // std::ofstream rampup("../data/rampup.dat");
-    // long long NUM_ENT = 1000000;
-    // long STEP = 1;
-    // entt::Registry<uint64_t> reg2 = test_entt_with_components(NUM_ENT);
-    // auto view = reg2.view<R>();
-    // for(uint64_t i = 0; i < NUM_ENT; i = i+STEP){
-    //     PAPI_start_counters(EventsClock, 1);
-    //     //PAPI_read_counters(startRamp, 1);
-    //     auto &var = view.get(i);
-    //     PAPI_stop_counters(stopRamp, 1);
-    //     printf("%llu stop - %llu start\n", stopRamp[0], startRamp[0]);
-    //     rampup << i << " " << stopRamp[0] /*- startRamp[0] /*<< " " << stopRamp[1] - startRamp[1] << " " << stopRamp[2] - startRamp[2]*/ <<std::endl;
-    // }
-    // rampup.close();    
+    //cpu cycles vs increasing reads
+    stopRamp[1] = {0};
+    std::ofstream cyclesvsreads("../data/cyclesvsreads.dat");
+    long long NUM_ENTreads = 10000;
+    long STEPreads = 1;
+    entt::Registry<uint64_t> reg3 = test_entt_with_components(NUM_ENT);
+    auto view = reg3.view<R>();
+    for(uint64_t i = 0; i < NUM_ENTreads; i = i+STEPreads){
+        PAPI_start_counters(EventsClock, 1);
+        auto &var = view.get(i);
+        PAPI_stop_counters(stopRamp, 1);
+        printf("%llu stop\n", stopRamp[0]);
+        cyclesvsreads << i << " " << stopRamp[0] <<std::endl;
+    }
+    cyclesvsreads.close();
+
+    //cpu cycles vs increasing writes
+    stopRamp[1] = {0};
+    std::ofstream cyclesvswrites("../data/cyclesvswrites.dat");
+    long long NUM_ENTwrites = 10000;
+    long STEPwrites = 1;
+    entt::Registry<uint64_t> reg4 = test_entt_with_components(NUM_ENT);
+    auto view1 = reg4.view<W1>();
+    for(uint64_t i = 0; i < NUM_ENTwrites; i = i+STEPwrites){
+        PAPI_start_counters(EventsClock, 1);
+        view1.each([](auto entity, W1 &w1){w1.x += 100;});
+        PAPI_stop_counters(stopRamp, 1);
+        printf("%llu stop\n", stopRamp[0]);
+        cyclesvswrites << i << " " << stopRamp[0] <<std::endl;
+    }
+    cyclesvswrites.close();     
 }
