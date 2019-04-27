@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo sh -c 'echo -1 >/proc/sys/kernel/perf_event_paranoid'
+
 g++ -I../lib/entt-2.7.3/src/entt/ main.cpp -lpapi
 
 ./a.out
